@@ -34,9 +34,9 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         self.use_text = use_text
 
         # for correctly calculate size
-        #n = self.obs_space["image"][0]
-        #m = self.obs_space["image"][1]
-        #self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
+        n = self.obs_space["image"][0]
+        m = self.obs_space["image"][1]
+        self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
         self.train()  # what does this do?
 
     @property

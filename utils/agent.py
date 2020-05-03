@@ -2,7 +2,7 @@ import torch
 
 import utils
 from model import ACModel
-from winnie_model import PNNModel
+from model_pnn import PNNModel
 
 class Agent:
     """An agent.

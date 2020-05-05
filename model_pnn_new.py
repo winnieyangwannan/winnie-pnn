@@ -115,40 +115,46 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         # x = (x / 255.0)  # why x is devided by 255 (from srikar)????????????
         #output_column = []
 
-        if len(self.columns) > 1:
-            a_list = []
-            V_list = []
-            U_list = []
-
+        #if len(self.columns) > 1:
+        a_list = []
+        V_list = []
+        U_list = []
+        out_column = []
         x = obs.image.transpose(1, 3).transpose(2, 3)
-        inputs = [self.columns[i].layers(0, obs, x, memory) for i in range(len(self.columns))]
+        input_pre = self.columns[0].layers(0, obs, x, memory)
+
         for l in range(1, self.n_layers):
-
+            # output from layer column 0
             if l == 3:
-                output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
-            elif l == 4:
-                output_column = [self.columns[0].layers(l, obs, inputs[0][0], memory)]
+                out = self.columns[0].layers(l, obs, input_pre, memory)
+                memory = out[1]
+                out = out[0]
             else:
-                output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
+                out = self.columns[0].layers(l, obs, input_pre, memory)
+            #if len(self.columns) == 1:
 
+            inputs = [self.columns[i].layers(0, x) for i in range(len(self.columns))]
             for c in range(1, len(self.columns)):
                 #in_cur = self.columns[c].layers(0, obs, x, memory)
                 #in_pre = self.columns[c-1].layers(0, obs, x, memory)
 
                 #out_cur = self.columns[c].layers(l, obs, in_cur, memory)   # output from current column, current layer
+
+                # output from current column
+                input_cur = self.columns[1].layers(0, obs, x, memory)
                 if l == 4:
-                    #pre_col = inputs[c - 1][0]  # output form previous column, previous layer
+                    pre_col = input_pre  # output form previous column, previous layer
                     #memory_pre = inputs[c - 1][1]   # check how to solve this
                     #memory = memory + memory_pre*0
-                    pre_col = inputs[c - 1]
-                    out_cur = self.columns[c].layers(l, obs, inputs[c], memory)  # output from current column, current layer
+                    out_cur = self.columns[c].layers(l, obs, input_cur, memory)  # output from current column, current layer
                 elif l == 5:
-                    pre_col = inputs[c - 1]
-                    #out_cur = []
+                    pre_col = input_pre
+                    out_cur = []
                 else:
-                    pre_col = inputs[c - 1]
-                    out_cur = self.columns[c].layers(l, obs, inputs[c], memory)  # output from current column, current layer
+                    pre_col = input_pre
+                    out_cur = self.columns[c].layers(l, obs, input_cur, memory)  # output from current column, current layer
 
+                # for actor_critic and memory_text, deal with two outputs separately
                 if l == 3:
                     memory = out_cur[1]
                     out_cur = out_cur[0]
@@ -175,11 +181,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     U_V_a_h = U(V_a_h)
 
                 elif l == 4:  # actor_critic layer
-                    if c == 1:
-                        a_h = a(pre_col[0])  # ONLY output from text_memory layer NOT memory transfer to current column
-                    else:
-                        a_h = a(pre_col)
-
+                    a_h = a(pre_col)  # ONLY output from text_memory layer NOT memory transfer to current column
                     V = self.generate_v(c, l - 1, a_h)
                     V_a_h = F.relu(V(a_h))
 
@@ -221,12 +223,12 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     out = [out_act, out_cri]
                 elif l == 5:
 
-                    inputs_final = U_V_a_h + inputs
-                    out = self.columns[c].layers(l, obs, inputs_final, memory)
+                    input_final = U_V_a_h + input_pre
+                    out = self.columns[c].layers(l, obs, input_final, memory)
                 else:
                     out = F.relu(out_cur + U_V_a_h)
 
-                output_column.append(out)
+                #output_column.append(out)
                 if l == 4:
                     a_list.append(a)
                     V_list.append(V)
@@ -244,19 +246,21 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     V_list.append(V)
                     U_list.append(U)
 
-            inputs = output_column
+                input_pre = out
+                out_column.append(out)
+            inputs = out_column
 
-        if len(self.columns) > 1:
-            a_list = nn.ModuleList(a_list)
-            V_list = nn.ModuleList(V_list)
-            U_list = nn.ModuleList(U_list)
+        #if len(self.columns) > 1:
+        a_list = nn.ModuleList(a_list)
+        V_list = nn.ModuleList(V_list)
+        U_list = nn.ModuleList(U_list)
 
-            self.alpha.append(a_list)
-            self.V.append(V_list)
-            self.U.append(U_list)
+        self.alpha.append(a_list)
+        self.V.append(V_list)
+        self.U.append(U_list)
 
         # for predicting value and action
-        output = inputs[-1]  # take last column output
+        output = out  # take last column output
         dist = output[0]
         value = output[1]
         memory = output[2]

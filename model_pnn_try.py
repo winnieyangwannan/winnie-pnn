@@ -124,10 +124,8 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         inputs = [self.columns[i].layers(0, obs, x, memory) for i in range(len(self.columns))]
         for l in range(1, self.n_layers):
 
-            if l == 3:
+            if l == 4:
                 output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
-            elif l == 4:
-                output_column = [self.columns[0].layers(l, obs, inputs[0][0], memory)]
             else:
                 output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
 
@@ -142,27 +140,18 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     #memory = memory + memory_pre*0
                     pre_col = inputs[c - 1]
                     out_cur = self.columns[c].layers(l, obs, inputs[c], memory)  # output from current column, current layer
+                    out_cur_act = out_cur[0]
+                    out_cur_cri = out_cur[1]
                 elif l == 5:
                     pre_col = inputs[c - 1]
-                    #out_cur = []
                 else:
                     pre_col = inputs[c - 1]
                     out_cur = self.columns[c].layers(l, obs, inputs[c], memory)  # output from current column, current layer
 
-                if l == 3:
-                    memory = out_cur[1]
-                    out_cur = out_cur[0]
-
-                elif l == 4:
-                    out_cur_act = out_cur[0]
-                    out_cur_cri = out_cur[1]
-                else:
-                    pass
-
-
                 # Scaling, dimensionality reduction and forwarding
                 #  a for controlling the strength of scaling layer
                 a = ScaleLayer(0.01)
+
                 if l == 3: # text layer
                     a_h = a(pre_col)  # pre_col = 2 ==> output from conv3
                     V = self.generate_v(c, l-1, a_h)
@@ -175,11 +164,6 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     U_V_a_h = U(V_a_h)
 
                 elif l == 4:  # actor_critic layer
-                    if c == 1:
-                        a_h = a(pre_col[0])  # ONLY output from text_memory layer NOT memory transfer to current column
-                    else:
-                        a_h = a(pre_col)
-
                     V = self.generate_v(c, l - 1, a_h)
                     V_a_h = F.relu(V(a_h))
 
@@ -220,7 +204,6 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     out_cri = F.relu(out_cur_cri + U_V_a_h_cri)
                     out = [out_act, out_cri]
                 elif l == 5:
-
                     inputs_final = U_V_a_h + inputs
                     out = self.columns[c].layers(l, obs, inputs_final, memory)
                 else:
@@ -403,19 +386,19 @@ class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
 
     def memory_text(self, obs, x, memory):
 
-        if self.use_memory:
-            hidden = (memory[:, :self.semi_memory_size], memory[:, self.semi_memory_size:])
-            hidden = self.memory_rnn(obs, hidden)
-            embedding = hidden[0]
-            memory = torch.cat(hidden, dim=1)
-        else:
-            embedding = x
+        #if self.use_memory:
+            #hidden = (memory[:, :self.semi_memory_size], memory[:, self.semi_memory_size:])
+            #hidden = self.memory_rnn(obs, hidden)
+            #embedding = hidden[0]
+            #memory = torch.cat(hidden, dim=1)
+
+        embedding = x
 
         if self.use_text:
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1)  # concat image input and text input
 
-        return [embedding, memory]
+        return embedding
 
     # define pnn column layer structure
     def layers(self, i, obs, x, memory):

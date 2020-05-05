@@ -2,27 +2,44 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
-import torch_ac_winnie
+import torch_ac
 import numpy as np
 import utils
 
 
-class PNNModel(nn.Module, torch_ac_winnie.RecurrentACModel):
+class PNNModel(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_pnn=False, base=None):
         super(PNNModel, self).__init__()
+        self.obs_space = obs_space
+        self.action_space = action_space
+        self.use_memory = use_memory
+        self.use_text = use_text
+
+        # for correctly calculate size
+        n = self.obs_space["image"][0]
+        m = self.obs_space["image"][1]
+        self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
+        #self.train()  # what does this do?
 
         if base is None:
             if use_pnn:
                 base = PNNConvBase
-        self.base = base(obs_space, action_space, use_memory=False, use_text=False)
+        self.base = base(self.obs_space, self.action_space, self.use_memory, self.use_text)
 
 
-class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
+    @property
+    def memory_size(self):
+        return 2 * self.semi_memory_size
+
+    @property
+    def semi_memory_size(self):
+        return self.image_embedding_size
+
+class PNNConvBase(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
         self.columns = nn.ModuleList([])
-        self.n_layers = 6  # winnie choutput_columnange to incorporate text and memory
-        #self.output_column.append = []
+        self.n_layers = 6
 
         self.alpha = nn.ModuleList([])
         self.V = nn.ModuleList([])
@@ -37,7 +54,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         n = self.obs_space["image"][0]
         m = self.obs_space["image"][1]
         self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
-        #self.train()  # what does this do?
+        self.train()  # what does this do?
 
     @property
     def memory_size(self):
@@ -51,21 +68,21 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         _, hidden = self.text_rnn(self.word_embedding(text))
         return hidden[-1]
 
-    def memory_text(self, obs, x, memory):
+    def memory_text(self, obs, x):
 
-        if self.use_memory:
-            hidden = (memory[:, :self.semi_memory_size], memory[:, self.semi_memory_size:])
-            hidden = self.memory_rnn(obs, hidden)
-            embedding = hidden[0]
-            memory = torch.cat(hidden, dim=1)
-        else:
-            embedding = x
+        #if self.use_memory:
+        #    hidden = (memory[:, :self.semi_memory_size], memory[:, self.semi_memory_size:])
+         #   hidden = self.memory_rnn(obs, hidden)
+          #  embedding = hidden[0]
+         #   memory = torch.cat(hidden, dim=1)
+        #else:
+        embedding = x
 
         if self.use_text:
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1) # concat image input and text input
 
-        return [embedding, memory]
+        return embedding
 
     def generate_v(self, cur_col, pre_layer, map_in):
         # here, map in shape is the shape of a_h or previous column, previous layer
@@ -77,8 +94,6 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
 
         if map_out_shape == 0:
             map_out_shape = 1
-        else:
-            pass
 
         # specify the dimension reduction conv layer v
         if pre_layer == 0:
@@ -89,12 +104,13 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
             v = init_(nn.Conv2d(map_in_shape, map_out_shape, 1))  # take output from  layer 2, previous column, do dimensionality reduction
         elif pre_layer == 3:
             v = init_(nn.Linear(map_in_shape, map_out_shape))
-        elif pre_layer == 4:
+        else:
             v = init_(nn.Linear(map_in_shape, map_out_shape))
 
         return v
 
     def generate_U(self, cur_layer, map_in_shape, map_out_shape):
+
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0))
 
@@ -106,7 +122,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
             u = init_(nn.Linear(map_in_shape, map_out_shape))
         elif cur_layer == 4:
             u = init_(nn.Linear(map_in_shape, map_out_shape))
-        elif cur_layer == 5:
+        else:
             u = init_(nn.Linear(map_in_shape, map_out_shape))
         return u
 
@@ -123,11 +139,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         x = obs.image.transpose(1, 3).transpose(2, 3)
         inputs = [self.columns[i].layers(0, obs, x, memory) for i in range(len(self.columns))]
         for l in range(1, self.n_layers):
-
-            if l == 4:
-                output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
-            else:
-                output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
+            output_column = [self.columns[0].layers(l, obs, inputs[0], memory)]
 
             for c in range(1, len(self.columns)):
                 #in_cur = self.columns[c].layers(0, obs, x, memory)
@@ -150,9 +162,9 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
 
                 # Scaling, dimensionality reduction and forwarding
                 #  a for controlling the strength of scaling layer
-                a = ScaleLayer(0.01)
 
                 if l == 3: # text layer
+                    a = ScaleLayer(0.01)
                     a_h = a(pre_col)  # pre_col = 2 ==> output from conv3
                     V = self.generate_v(c, l-1, a_h)
                     V_a_h = F.relu(V(a_h))
@@ -164,6 +176,8 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     U_V_a_h = U(V_a_h)
 
                 elif l == 4:  # actor_critic layer
+                    a = ScaleLayer(0.01)
+                    a_h = a(pre_col)
                     V = self.generate_v(c, l - 1, a_h)
                     V_a_h = F.relu(V(a_h))
 
@@ -174,8 +188,10 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     #U = [U_act, U_cri]
 
                 elif l == 5:  # final layer
-                    a_h_act = a(pre_col[0])
-                    a_h_cri = a(pre_col[1])
+                    a_act = ScaleLayer(0.01)
+                    a_h_act = a_act(pre_col[0])
+                    a_cri = ScaleLayer(0.01)
+                    a_h_cri = a_cri(pre_col[1])
                     V_act = self.generate_v(c, l - 1, a_h_act)
                     V_cri = self.generate_v(c, l - 1, a_h_cri)
                     #V = [V_act, V_cri]
@@ -191,6 +207,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     #U = [U_act, U_cri]
 
                 else:
+                    a = ScaleLayer(0.01)
                     a_h = a(pre_col)
                     V = self.generate_v(c, l-1, a_h)
                     V_a_h = F.relu(V(a_h))
@@ -204,12 +221,13 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     out_cri = F.relu(out_cur_cri + U_V_a_h_cri)
                     out = [out_act, out_cri]
                 elif l == 5:
-                    inputs_final = U_V_a_h + inputs
+                    inputs_final = U_V_a_h + inputs[c]
                     out = self.columns[c].layers(l, obs, inputs_final, memory)
                 else:
                     out = F.relu(out_cur + U_V_a_h)
 
                 output_column.append(out)
+
                 if l == 4:
                     a_list.append(a)
                     V_list.append(V)
@@ -217,7 +235,8 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     U_list.append(U_cri)
 
                 elif l == 5:
-                    a_list.append(a)
+                    a_list.append(a_act)
+                    a_list.append(a_cri)
                     V_list.append(V_act)
                     V_list.append(V_cri)
                     U_list.append(U_act)
@@ -250,49 +269,6 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
         new_column = PNNColumn(self.obs_space, self.action_space, self.use_memory, self.use_text)
         self.columns.append(new_column)
 
-        #init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               #constant_(x, 0))
-
-        #if len(self.columns) > 1:
-         #   a = ScaleLayer(0.01)
-
-            #################################################
-          #  pre_col, col = self.columns[-2], self.columns[-1]
-
-            #a_list = []
-            #V_list = []
-            #U_list = []
-            #for l in range(1, self.n_layers):
-
-
-             #   map_in = pre_col.output_shapes[l - 1]
-              #  map_out = int(map_in / 2)
-
-
-               # if l != self.n_layers - 2:  # conv -> conv, tex_memory layer
-
-                #    cur_out = col.output_shapes[l]
-                 #   size, stride = pre_col.topology[l - 1]
-                  #  u = init_(nn.Conv2d(map_out, cur_out, size, stride=stride))
-
-                #else: # non-conv layers
-                 #   input_size = int(col.input_shapes[l] / 2)  # check here, the original code is get v_a_h.shape here
-                  #  out_put_size = self.topology(l)
-
-                   # u = init_(nn.Linear(input_size, out_put_size))
-
-                #a_list.append(a)
-                #V_list.append(v)
-                #U_list.append(u)
-
-            #a_list = nn.ModuleList(a_list)
-            #V_list = nn.ModuleList(V_list)
-            #U_list = nn.ModuleList(U_list)
-
-            #self.alpha.append(a_list)
-            #self.V.append(V_list)
-            #self.U.append(U_list)
-
     def freeze_columns(self, skip=None):  # freezes the weights of previous columns
         if skip is None:
             skip = []
@@ -302,20 +278,16 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                 for params in c.parameters():
                     params.requires_grad = False
 
+    def parameters(self, col=None):
+        if col is None:
+            return super(PNNConvBase, self).parameters()
 
-class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
+        return self.columns[col].parameters()
+
+
+class PNNColumn(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory, use_text):
         super().__init__()
-
-        # Decide which components are enabled
-        self.use_text = use_text
-        self.use_memory = use_memory
-
-        # for correctly calculate size
-        n = obs_space["image"][0]
-        m = obs_space["image"][1]
-        self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
-
 
         # for initiatiate parameters
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
@@ -328,14 +300,22 @@ class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
         # Define operations on layers
         self.mp = nn.MaxPool2d((2, 2))
         self.relu = nn.ReLU()
-        self.flatten = Flatten()
+        #self.flatten = Flatten()
 
 
         ############################# From original ppo code ################################
+        # Decide which components are enabled
+        self.use_text = use_text
+        self.use_memory = use_memory
+
+        # for correctly calculate size
+        n = obs_space["image"][0]
+        m = obs_space["image"][1]
+        self.image_embedding_size = ((n - 1) // 2 - 2) * ((m - 1) // 2 - 2) * 64
 
         # Define memory
-        if self.use_memory:
-            self.memory_rnn = nn.LSTMCell(self.image_embedding_size, self.semi_memory_size)
+        #if self.use_memory:
+         #   self.memory_rnn = nn.LSTMCell(self.image_embedding_size, self.semi_memory_size)
 
         # Define text embedding
         if self.use_text:
@@ -384,7 +364,7 @@ class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
     def semi_memory_size(self):
         return self.image_embedding_size
 
-    def memory_text(self, obs, x, memory):
+    def memory_text(self, obs, x):
 
         #if self.use_memory:
             #hidden = (memory[:, :self.semi_memory_size], memory[:, self.semi_memory_size:])
@@ -411,13 +391,13 @@ class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
         elif i == 3:
             # connect to text/memory layer
             x = x.reshape(x.shape[0], -1)
-            return self.memory_text(obs, x, memory)
+            return self.memory_text(obs, x)
         elif i == 4:
             # actor and crtic layer
             x_a = self.actor(x)
             x_c = self.critic(x)
             return [x_a, x_c]
-        elif i == 5:
+        else:
             dist = Categorical(logits=F.log_softmax(x[0], dim=1))
             value = x[1].squeeze(1)
             return [dist, value, memory]
@@ -425,16 +405,9 @@ class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
     # forward method for layers in one PNN column
     def forward(self, obs, memory):
         x = obs.image.transpose(1, 3).transpose(2, 3)
-        for i in range(3): # three convolution layers
+        for i in range(6): # three convolution layers
             x = self.layers(i, obs, x, memory)
 
-        embedding_memory = self.layers(3, obs, x, memory) # memory_text layer
-        embedding = embedding_memory[0]
-        memory = embedding_memory[1]
-        x = embedding
-
-        x = self.layers(4, obs, x, memory) # actor_critic layer
-        x = self.layer(5, obs, x, memory) # last layer
         dist = x[0]
         value = x[1]
         return [dist, value, memory]  # check later,outs is for Srikar, dist, value and memory is for original ppo
@@ -475,7 +448,7 @@ class ScaleLayer(nn.Module):
 
 
 #########################################################################
-class ACModel(nn.Module, torch_ac_winnie.RecurrentACModel):
+class ACModel(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
 

@@ -7,7 +7,7 @@ import numpy as np
 import utils
 
 
-class PNNModel(nn.Module, torch_ac_winnie.RecurrentACModel):
+class PNNModel(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_pnn=False, base=None):
         super(PNNModel, self).__init__()
 
@@ -17,7 +17,7 @@ class PNNModel(nn.Module, torch_ac_winnie.RecurrentACModel):
         self.base = base(obs_space, action_space, use_memory=False, use_text=False)
 
 
-class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
+class PNNConvBase(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
         self.columns = nn.ModuleList([])
@@ -320,7 +320,7 @@ class PNNConvBase(nn.Module, torch_ac_winnie.RecurrentACModel):
                     params.requires_grad = False
 
 
-class PNNColumn(nn.Module, torch_ac_winnie.RecurrentACModel):
+class PNNColumn(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory, use_text):
         super().__init__()
 
@@ -492,7 +492,7 @@ class ScaleLayer(nn.Module):
 
 
 #########################################################################
-class ACModel(nn.Module, torch_ac_winnie.RecurrentACModel):
+class ACModel(nn.Module, torch_ac.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
 

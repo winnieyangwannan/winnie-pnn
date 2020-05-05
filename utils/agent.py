@@ -1,8 +1,10 @@
 import torch
-
 import utils
-from model import ACModel
-from model_pnn import PNNModel
+#from model import ACModel
+from model_pnn_try import PNNModel
+
+ACModel = PNNModel
+
 
 class Agent:
     """An agent.

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
-import torch_ac_winnie
+import torch_ac
 import numpy as np
 import utils
 

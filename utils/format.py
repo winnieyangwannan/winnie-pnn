@@ -15,7 +15,7 @@ def get_obss_preprocessor(obs_space):
         obs_space = {"image": obs_space.shape}
 
         def preprocess_obss(obss, device=None):
-            return torch_ac_winnie.DictList({
+            return torch_ac.DictList({
                 "image": preprocess_images(obss, device=device)
             })
 
@@ -25,7 +25,7 @@ def get_obss_preprocessor(obs_space):
 
         vocab = Vocabulary(obs_space["text"])
         def preprocess_obss(obss, device=None):
-            return torch_ac_winnie.DictList({
+            return torch_ac.DictList({
                 "image": preprocess_images([obs["image"] for obs in obss], device=device),
                 "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device)
             })

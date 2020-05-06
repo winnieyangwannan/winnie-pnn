@@ -5,7 +5,7 @@ import datetime
 import torch
 print('torch:')
 print(torch.__version__)
-import torch_ac
+import torch_ac_pnn
 import tensorboardX
 import sys
 import utils
@@ -164,22 +164,22 @@ txt_logger.info("{}\n".format(acmodel))
 # Load algo
 if args.algo == "a2c":
     if  args.use_pnn == 'False':
-        algo = torch_ac.A2CAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
+        algo = torch_ac_pnn.A2CAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
                                        args.gae_lambda,
                                        args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                                        args.optim_alpha, args.optim_eps, preprocess_obss)
     else:
-        algo = torch_ac.A2CAlgo(envs, acmodel.base, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+        algo = torch_ac_pnn.A2CAlgo(envs, acmodel.base, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
                             args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                             args.optim_alpha, args.optim_eps, preprocess_obss)
 elif args.algo == "ppo":
     if args.use_pnn == 'False':
-        algo = torch_ac.PPOAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
+        algo = torch_ac_pnn.PPOAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
                                        args.gae_lambda,
                                        args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                                        args.optim_eps, args.clip_eps, args.epochs, args.batch_size, preprocess_obss)
     else:
-        algo = torch_ac.PPOAlgo(envs, acmodel.base, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+        algo = torch_ac_pnn.PPOAlgo(envs, acmodel.base, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
                             args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                             args.optim_eps, args.clip_eps, args.epochs, args.batch_size, preprocess_obss)
 else:
@@ -253,6 +253,3 @@ while num_frames < args.frames:
         utils.save_status(status, model_dir)
         txt_logger.info("Status saved")
 
-
-a = 5
-b = 6

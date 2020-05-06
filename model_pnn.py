@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
-import torch_ac
+import torch_ac_pnn
 import numpy as np
 import utils
 
 
-class PNNModel(nn.Module, torch_ac.RecurrentACModel):
+class PNNModel(nn.Module, torch_ac_pnn.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_pnn=False, base=None):
         super(PNNModel, self).__init__()
         self.obs_space = obs_space
@@ -35,7 +35,7 @@ class PNNModel(nn.Module, torch_ac.RecurrentACModel):
         return self.image_embedding_size
 
 
-class PNNConvBase(nn.Module, torch_ac.RecurrentACModel):
+class PNNConvBase(nn.Module, torch_ac_pnn.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
         self.columns = nn.ModuleList([])
@@ -316,7 +316,7 @@ class PNNConvBase(nn.Module, torch_ac.RecurrentACModel):
         return self.columns[col].parameters()
 
 
-class PNNColumn(nn.Module, torch_ac.RecurrentACModel):
+class PNNColumn(nn.Module, torch_ac_pnn.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory, use_text):
         super().__init__()
 
@@ -470,7 +470,7 @@ class ScaleLayer(nn.Module):
 
 
 #########################################################################
-class ACModel(nn.Module, torch_ac.RecurrentACModel):
+class ACModel(nn.Module, torch_ac_pnn.RecurrentACModel):
     def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
         super().__init__()
 

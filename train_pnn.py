@@ -9,7 +9,7 @@ import torch_ac
 import tensorboardX
 import sys
 import utils
-from model_pnn_try import PNNModel, ACModel
+from model_pnn import PNNModel, ACModel
 
 
 

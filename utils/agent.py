@@ -1,7 +1,7 @@
 import torch
 import utils
 #from model import ACModel
-from model_pnn_try import PNNModel
+from model_pnn import PNNModel
 
 ACModel = PNNModel
 

@@ -31,7 +31,7 @@ parser.add_argument("--save-interval", type=int, default=10,
                     help="number of updates between two saves (default: 10, 0 means no saving)")
 parser.add_argument("--procs", type=int, default=16,
                     help="number of processes (default: 16)")
-parser.add_argument("--frames", type=int, default=1e9,
+parser.add_argument("--frames", type=int, default=420000,
                     help="number of frames of training (default: 1e7)")
 
 # Parameters for main algorithm
@@ -65,7 +65,7 @@ parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
 
 # Argument for Comet
-parser.add_argument('--exp-name', default='new_exp', type=str)
+parser.add_argument('--exp-name', default='new_exp')
 parser.add_argument('--comet-project-name', default='doorkey-m', type=str)
 
 # Argument for PNN
@@ -242,7 +242,7 @@ while num_frames < args.frames:
         # save to tensorboard
         for field, value in zip(header, data):
             tb_writer.add_scalar(field, value)
-            #experiment.log_metric(field, value, epoch=update)
+            experiment.log_metric(field, value, epoch=update)
     # Save status
 
     if args.save_interval > 0 and update % args.save_interval == 0:

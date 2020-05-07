@@ -15,7 +15,7 @@ def get_obss_preprocessor(obs_space):
         obs_space = {"image": obs_space.shape}
 
         def preprocess_obss(obss, device=None):
-            return torch_ac.DictList({
+            return torch_ac_pnn.DictList({
                 "image": preprocess_images(obss, device=device)
             })
 

@@ -3,7 +3,10 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/TORCH_AC_WINNIE" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/gym-minigrid" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/gym-minigrid/torch-ac" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/torch-ac" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/torch-ac-winnie" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/torch-ac/torch-ac" vcs="Git" />
   </component>
 </project>

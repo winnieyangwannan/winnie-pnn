@@ -119,7 +119,7 @@ txt_logger.info("Environments loaded\n")
 # Load training status
 
 try:
-    status = utils.get_status(model_dir)
+    status = utils.get_status(model_dir, args.seed)
 except OSError:
     status = {"num_frames": 0, "update": 0}
 txt_logger.info("Training status loaded\n")
@@ -134,7 +134,7 @@ txt_logger.info("Observations preprocessor loaded")
 # Load model
 if args.use_pnn == 'True':
     for _ in range(args.n_columns):
-        acmodel = PNNModel(obs_space, envs[0].action_space, use_memory=False, use_text=False, use_pnn=args.use_pnn, base=None)
+        acmodel = PNNModel(obs_space, envs[0].action_space, use_memory=args.mem, use_text=args.text, use_pnn=args.use_pnn, base=None)
     # Add a new column to the model
     for _ in range(args.n_columns):
         acmodel.base.new_task()
@@ -146,7 +146,7 @@ if args.use_pnn == 'True':
     # load CURRENT column model parameter for resuming training
     if "model_state" in status:
         # acmodel.base.columns[args.n_columns - 1].load_state_dict(status["model_state"])
-        status_path = utils.get_status_path(model_dir)
+        status_path = utils.get_status_path(model_dir, args.seed)
         utils.pnn_load_state_dict(acmodel, args.n_columns - 1, status_path)
 
 
@@ -250,6 +250,6 @@ while num_frames < args.frames:
                   "model_state": acmodel.state_dict(), "optimizer_state": algo.optimizer.state_dict()}
         if hasattr(preprocess_obss, "vocab"):
             status["vocab"] = preprocess_obss.vocab.vocab
-        utils.save_status(status, model_dir)
+        utils.save_status(status, model_dir, args.seed)
         txt_logger.info("Status saved")
 

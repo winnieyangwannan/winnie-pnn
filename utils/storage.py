@@ -23,17 +23,17 @@ def get_model_dir(env_name, num_columns, transfer):
     return os.path.join(get_storage_dir(), env_name, 'columns_' + str(num_columns), transfer)
 
 
-def get_status_path(model_dir):
-    return os.path.join(model_dir, str('s1_') + 'status.pt')
+def get_status_path(model_dir, seed):
+    return os.path.join(model_dir, str(seed) + '_status.pt')
 
 
-def get_status(model_dir):
-    path = get_status_path(model_dir)
+def get_status(model_dir, seed):
+    path = get_status_path(model_dir, seed)
     return torch.load(path)
 
 
-def save_status(status, model_dir):
-    path = get_status_path(model_dir)
+def save_status(status, model_dir, seed):
+    path = get_status_path(model_dir, seed)
     utils.create_folders_if_necessary(path)
     torch.save(status, path)
 

@@ -19,12 +19,12 @@ def get_storage_dir():
     return "storage"
 
 
-def get_model_dir(env_name, num_columns):
-    return os.path.join(get_storage_dir(), env_name, 'columns_' + str(num_columns))
+def get_model_dir(env_name, num_columns, transfer):
+    return os.path.join(get_storage_dir(), env_name, 'columns_' + str(num_columns), transfer)
 
 
 def get_status_path(model_dir):
-    return os.path.join(model_dir, 'status.pt')
+    return os.path.join(model_dir, str('s1_') + 'status.pt')
 
 
 def get_status(model_dir):

@@ -72,7 +72,7 @@ parser.add_argument('--comet-project-name', default='doorkey-m', type=str)
 parser.add_argument('--use-pnn', default=True)
 parser.add_argument('--n-columns', default=1, type=int, help='Number of columns in PNN')
 parser.add_argument('--pnn-paths', default=[], nargs='*', type=str)
-
+parser.add_argument('--transfer', default='No_Transfer', type=str)
 args = parser.parse_args()
 args.mem = args.recurrence > 1
 
@@ -87,7 +87,7 @@ date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
 default_model_name = f"{args.env}_{args.algo}_seed{args.seed}_{date}"
 
 model_name = args.model or default_model_name
-model_dir = utils.get_model_dir(args.env, args.n_columns)
+model_dir = utils.get_model_dir(args.env, args.n_columns, args.transfer)
 
 # Load loggers and Tensorboard writer
 

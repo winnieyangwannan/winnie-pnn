@@ -38,12 +38,12 @@ def save_status(status, model_dir, seed):
     torch.save(status, path)
 
 
-def get_vocab(model_dir):
-    return get_status(model_dir)["vocab"]
+def get_vocab(model_dir, seed):
+    return get_status(model_dir, seed)["vocab"]
 
 
-def get_model_state(model_dir):
-    return get_status(model_dir)["model_state"]
+def get_model_state(model_dir,seed):
+    return get_status(model_dir, seed)["model_state"]
 
 
 def get_txt_logger(model_dir):

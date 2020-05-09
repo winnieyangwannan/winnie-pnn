@@ -1,16 +1,16 @@
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
 
-class FetchEnv(MiniGridEnv):
+class FetchObjEnv(MiniGridEnv):
     """
-    Environment in which the agent has to fetch a random object
+    Environment in which the agent has to fetch either a yellow key or a blue ball
     named using English text strings
     """
 
     def __init__(
         self,
         size=8,
-        numObjs=3
+        numObjs=3,
     ):
         self.numObjs = numObjs
 
@@ -30,19 +30,35 @@ class FetchEnv(MiniGridEnv):
         self.grid.vert_wall(0, 0)
         self.grid.vert_wall(width-1, 0)
 
-        types = ['key', 'ball']
-
+        types = ['key', 'ball','box', 'goal','door']
         objs = []
 
         # For each object to be generated
+        objType = self._rand_elem(types[0:3])
+        if objType == 'key':
+            obj = Key('yellow')
+        elif objType == 'ball':
+            obj = Ball('yellow')
+        elif objType == 'box':
+            obj = Box('yellow')
+
+        self.place_obj(obj)
+        objs.append(obj)
+
         while len(objs) < self.numObjs:
             objType = self._rand_elem(types)
-            objColor = self._rand_elem(COLOR_NAMES)
+            #objColor = self._rand_elem(COLOR_NAMES)
 
             if objType == 'key':
-                obj = Key(objColor)
+                obj = Key('yellow')
             elif objType == 'ball':
-                obj = Ball(objColor)
+                obj = Ball('yellow')
+            elif objType == 'goal':
+                obj = Goal('yellow')
+            elif objType == 'box':
+                obj = Box('yellow')
+            elif objType == 'door':
+                obj = Door('yellow')
 
             self.place_obj(obj)
             objs.append(obj)
@@ -51,7 +67,7 @@ class FetchEnv(MiniGridEnv):
         self.place_agent()
 
         # Choose a random object to be picked up
-        target = objs[self._rand_int(0, len(objs))]
+        target = objs[0]
         self.targetType = target.type
         self.targetColor = target.color
 
@@ -85,41 +101,88 @@ class FetchEnv(MiniGridEnv):
 
         return obs, reward, done, info
 
-class FetchEnv5x5N2(FetchEnv):
+
+class FetchObjEnv5x5N2(FetchObjEnv):
     def __init__(self):
         super().__init__(size=5, numObjs=2)
 
-class FetchEnv6x6N2(FetchEnv):
+
+class FetchObjEnv6x6N2(FetchObjEnv):
     def __init__(self):
         super().__init__(size=6, numObjs=2)
 
 
-class FetchEnv8x8N2(FetchEnv):
+class FetchObjEnv8x8N2(FetchObjEnv):
     def __init__(self):
         super().__init__(size=8, numObjs=2)
 
 
-class FetchEnv16x16N2(FetchEnv):
+class FetchObjEnv16x16N2(FetchObjEnv):
     def __init__(self):
         super().__init__(size=16, numObjs=2)
 
 
 register(
-    id='MiniGrid-fetch-5x5-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv5x5N2'
+    id='MiniGrid-FetchObj-5x5-N2-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv5x5N2'
 )
 
 register(
-    id='MiniGrid-fetch-6x6-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv6x6N2'
+    id='MiniGrid-FetchObj-6x6-N2-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv6x6N2'
 )
 
 register(
-    id='MiniGrid-fetch-8x8-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv8x8N2'
+    id='MiniGrid-FetchObj-8x8-N2-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv8x8N2'
 )
 
 register(
-    id='MiniGrid-fetch-16x16-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv16x16N2'
+    id='MiniGrid-FetchObj-16x16-N2-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv16x16N2'
 )
+
+##########################################################################
+class FetchObjEnv5x5N3(FetchObjEnv):
+    def __init__(self):
+        super().__init__(size=5, numObjs=3)
+
+
+class FetchObjEnv6x6N3(FetchObjEnv):
+    def __init__(self):
+        super().__init__(size=6, numObjs=3)
+
+
+class FetchObjEnv8x8N3(FetchObjEnv):
+    def __init__(self):
+        super().__init__(size=8, numObjs=3)
+
+
+class FetchObjEnv16x16N3(FetchObjEnv):
+    def __init__(self):
+        super().__init__(size=16, numObjs=3)
+
+
+
+register(
+    id='MiniGrid-FetchObj-5x5-N3-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv5x5N3'
+)
+
+register(
+    id='MiniGrid-FetchObj-6x6-N3-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv6x6N3'
+)
+
+register(
+    id='MiniGrid-FetchObj-8x8-N3-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv8x8N3'
+)
+
+register(
+    id='MiniGrid-FetchObj-16x16-N3-v0',
+    entry_point='gym_minigrid.envs:FetchObjEnv16x16N3'
+)
+
+
+

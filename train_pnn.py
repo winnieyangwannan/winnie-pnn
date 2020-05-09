@@ -9,7 +9,7 @@ import torch_ac_pnn
 import tensorboardX
 import sys
 import utils
-from model_pnn import PNNModel, ACModel
+from model_pnn_transfer import PNNModel, ACModel
 
 
 
@@ -133,8 +133,8 @@ txt_logger.info("Observations preprocessor loaded")
 
 # Load model
 if args.use_pnn == 'True':
-    for _ in range(args.n_columns):
-        acmodel = PNNModel(obs_space, envs[0].action_space, use_memory=args.mem, use_text=args.text, use_pnn=args.use_pnn, base=None)
+
+    acmodel = PNNModel(obs_space, envs[0].action_space, use_memory=args.mem, use_text=args.text, use_pnn=args.use_pnn, base=None)
     # Add a new column to the model
     for _ in range(args.n_columns):
         acmodel.base.new_task()

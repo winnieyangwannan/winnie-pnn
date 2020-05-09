@@ -1,7 +1,7 @@
 import torch
 import utils
 #from model import ACModel
-from model_pnn import PNNModel
+from model_pnn_transfer import PNNModel
 
 ACModel = PNNModel
 
@@ -13,10 +13,13 @@ class Agent:
     - to choose an action given an observation,
     - to analyze the feedback (i.e. reward and done state) of its action."""
 
-    def __init__(self, obs_space, action_space, model_dir,
+    def __init__(self, obs_space, action_space, model_dir, seed, n_columns,
                  device=None, argmax=False, num_envs=1, use_memory=False, use_text=False):
         obs_space, self.preprocess_obss = utils.get_obss_preprocessor(obs_space)
-        self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text)
+        #self.acmodel = PNNModel(obs_space, action_space, use_memory=use_memory, use_text=use_text)
+        self.acmodel = PNNModel(obs_space, action_space, use_memory=use_memory, use_text=use_text,
+                           use_pnn=True, base=None)
+
         self.device = device
         self.argmax = argmax
         self.num_envs = num_envs
@@ -24,20 +27,37 @@ class Agent:
         if self.acmodel.recurrent:
             self.memories = torch.zeros(self.num_envs, self.acmodel.memory_size)
 
-        self.acmodel.load_state_dict(utils.get_model_state(model_dir))
+        # Add a new column to the model
+        for _ in range(n_columns):
+            self.acmodel.base.new_task()
+        # Load model parameters for PREVIOUS columns
+        #for i in range(n_columns - 1):
+            #utils.pnn_load_state_dict(self.acmodel, i, pnn_paths[i])
+        # Freeze the weights all previous columns
+        #acmodel.base.freeze_columns(skip=[args.n_columns - 1])
+        # load CURRENT column model parameter for resuming training
+        #if "model_state" in status:
+            # acmodel.base.columns[args.n_columns - 1].load_state_dict(status["model_state"])
+            #status_path = utils.get_status_path(model_dir, args.seed)
+            #utils.pnn_load_state_dict(acmodel, args.n_columns - 1, status_path)
+        # Load model parameters for all columns
+        status_path = utils.get_status_path(model_dir, seed)
+        for i in range(n_columns-1):
+            utils.pnn_load_state_dict(self.acmodel, i, status_path)
+
         self.acmodel.to(self.device)
         self.acmodel.eval()
         if hasattr(self.preprocess_obss, "vocab"):
-            self.preprocess_obss.vocab.load_vocab(utils.get_vocab(model_dir))
+            self.preprocess_obss.vocab.load_vocab(utils.get_vocab(model_dir,seed))
 
     def get_actions(self, obss):
         preprocessed_obss = self.preprocess_obss(obss, device=self.device)
 
         with torch.no_grad():
             if self.acmodel.recurrent:
-                dist, _, self.memories = self.acmodel(preprocessed_obss, self.memories)
+                dist, _, self.memories = self.acmodel.base(preprocessed_obss, self.memories)
             else:
-                dist, _ = self.acmodel(preprocessed_obss)
+                dist, _ = self.acmodel.base(preprocessed_obss)
 
         if self.argmax:
             actions = dist.probs.max(1, keepdim=True)[1]
@@ -45,7 +65,6 @@ class Agent:
             actions = dist.sample()
 
         return actions.cpu().numpy()
-
     def get_action(self, obs):
         return self.get_actions([obs])[0]
 

@@ -19,3 +19,9 @@ from gym_minigrid.envs.crossing import *
 from gym_minigrid.envs.lavagap import *
 from gym_minigrid.envs.dynamicobstacles import *
 from gym_minigrid.envs.distshift import *
+
+#
+from gym_minigrid.envs.fetchKey import *
+from gym_minigrid.envs.fetchBall import *
+from gym_minigrid.envs.fetchObj import *
+from gym_minigrid.envs.fetchCol import *

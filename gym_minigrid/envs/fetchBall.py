@@ -1,16 +1,16 @@
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
 
-class FetchEnv(MiniGridEnv):
+class FetchBallEnv(MiniGridEnv):
     """
-    Environment in which the agent has to fetch a random object
+    Environment in which the agent has to fetch a random color ball
     named using English text strings
     """
 
     def __init__(
         self,
         size=8,
-        numObjs=3
+        numObjs=3,
     ):
         self.numObjs = numObjs
 
@@ -30,9 +30,8 @@ class FetchEnv(MiniGridEnv):
         self.grid.vert_wall(0, 0)
         self.grid.vert_wall(width-1, 0)
 
-        #types = ['key', 'ball']
-        types = ['key']
 
+        types = ['ball']
         objs = []
 
         # For each object to be generated
@@ -86,25 +85,46 @@ class FetchEnv(MiniGridEnv):
 
         return obs, reward, done, info
 
-class FetchEnv5x5N2(FetchEnv):
+
+class FetchBallEnv5x5N1(FetchBallEnv):
     def __init__(self):
-        super().__init__(size=5, numObjs=2)
+        super().__init__(size=5, numObjs=1)
 
-class FetchEnv6x6N2(FetchEnv):
+
+class FetchBallEnv6x6N1(FetchBallEnv):
     def __init__(self):
-        super().__init__(size=6, numObjs=2)
+        super().__init__(size=6, numObjs=1)
+
+
+class FetchBallEnv8x8N1(FetchBallEnv):
+    def __init__(self):
+        super().__init__(size=8, numObjs=1)
+
+
+class FetchBallEnv16x16N1(FetchBallEnv):
+    def __init__(self):
+        super().__init__(size=16, numObjs=1)
+
 
 register(
-    id='MiniGrid-Fetch-5x5-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv5x5N2'
+    id='MiniGrid-FetchBall-5x5-N1-v0',
+    entry_point='gym_minigrid.envs:FetchBallEnv5x5N1'
 )
 
 register(
-    id='MiniGrid-Fetch-6x6-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv6x6N2'
+    id='MiniGrid-FetchBall-6x6-N1-v0',
+    entry_point='gym_minigrid.envs:FetchBallEnv6x6N1'
 )
 
 register(
-    id='MiniGrid-Fetch-8x8-N3-v0',
-    entry_point='gym_minigrid.envs:FetchEnv'
+    id='MiniGrid-FetchBall-8x8-N1-v0',
+    entry_point='gym_minigrid.envs:FetchBallEnv8x8N1'
 )
+
+register(
+    id='MiniGrid-FetchBall-16x16-N1-v0',
+    entry_point='gym_minigrid.envs:FetchBallEnv16x16N1'
+)
+
+
+

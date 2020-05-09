@@ -1,16 +1,16 @@
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
 
-class FetchEnv(MiniGridEnv):
+class FetchColEnv(MiniGridEnv):
     """
-    Environment in which the agent has to fetch a random object
+    Environment in which the agent has to fetch either a yellow key or a blue ball
     named using English text strings
     """
 
     def __init__(
         self,
         size=8,
-        numObjs=3
+        numObjs=3,
     ):
         self.numObjs = numObjs
 
@@ -30,19 +30,19 @@ class FetchEnv(MiniGridEnv):
         self.grid.vert_wall(0, 0)
         self.grid.vert_wall(width-1, 0)
 
-        types = ['key', 'ball']
 
+        types = ['key','ball']
         objs = []
 
         # For each object to be generated
         while len(objs) < self.numObjs:
             objType = self._rand_elem(types)
-            objColor = self._rand_elem(COLOR_NAMES)
+            #objColor = self._rand_elem(COLOR_NAMES)
 
             if objType == 'key':
-                obj = Key(objColor)
+                obj = Key('yellow')
             elif objType == 'ball':
-                obj = Ball(objColor)
+                obj = Ball('blue')
 
             self.place_obj(obj)
             objs.append(obj)
@@ -85,41 +85,49 @@ class FetchEnv(MiniGridEnv):
 
         return obs, reward, done, info
 
-class FetchEnv5x5N2(FetchEnv):
+
+class FetchColEnv5x5N2(FetchColEnv):
     def __init__(self):
-        super().__init__(size=5, numObjs=2)
+        super().__init__(size=5, numObjs=1)
 
-class FetchEnv6x6N2(FetchEnv):
+
+class FetchCOlEnv6x6N2(FetchColEnv):
     def __init__(self):
-        super().__init__(size=6, numObjs=2)
+        super().__init__(size=6, numObjs=1)
 
 
-class FetchEnv8x8N2(FetchEnv):
+class FetchColEnv8x8N2(FetchColEnv):
     def __init__(self):
-        super().__init__(size=8, numObjs=2)
+        super().__init__(size=8, numObjs=1)
 
 
-class FetchEnv16x16N2(FetchEnv):
+class FetchColEnv16x16N2(FetchColEnv):
     def __init__(self):
-        super().__init__(size=16, numObjs=2)
+        super().__init__(size=16, numObjs=1)
+
+
 
 
 register(
-    id='MiniGrid-fetch-5x5-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv5x5N2'
+    id='MiniGrid-FetchCol-5x5-N2-v0',
+    entry_point='gym_minigrid.envs:FetchColEnv5x5N2'
 )
 
 register(
-    id='MiniGrid-fetch-6x6-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv6x6N2'
+    id='MiniGrid-FetchCol-6x6-N2-v0',
+    entry_point='gym_minigrid.envs:FetchColEnv6x6N2'
 )
 
 register(
-    id='MiniGrid-fetch-8x8-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv8x8N2'
+    id='MiniGrid-FetchCol-8x8-N2-v0',
+    entry_point='gym_minigrid.envs:FetchColEnv8x8N2'
 )
 
 register(
-    id='MiniGrid-fetch-16x16-N2-v0',
-    entry_point='gym_minigrid.envs:FetchEnv16x16N2'
+    id='MiniGrid-FetchCol-16x16-N2-v0',
+    entry_point='gym_minigrid.envs:FetchObjCol16x16N2'
 )
+
+
+
+
